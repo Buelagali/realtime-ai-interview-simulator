@@ -54,7 +54,7 @@ function Login() {
   return (
     <div style={styles.container}>
       <div style={styles.card}>
-        <h1 style={styles.title}>AI Interview Quantum System</h1>
+        <h1 style={styles.title}> Real-Time AI Interview Evaluation System </h1>
 
         <p style={styles.subtitle}>Smart Real-Time Interview Evaluation</p>
 
