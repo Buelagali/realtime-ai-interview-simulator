@@ -15,23 +15,14 @@ function Interview() {
   const [answers, setAnswers] = useState([]);
   const [questionIndex, setQuestionIndex] = useState(0);
   const [timeLeft, setTimeLeft] = useState(300);
-  const [confidence, setConfidence] = useState(75);
+
+  const [confidence, setConfidence] = useState(0);
+  const [emotion, setEmotion] = useState("Neutral 😐");
   const [isListening, setIsListening] = useState(false);
 
   // Start Camera
   useEffect(() => {
     startCamera();
-  }, []);
-
-  // Confidence simulation
-  useEffect(() => {
-    const confidenceTimer = setInterval(() => {
-      const randomScore = Math.floor(Math.random() * 21) + 70;
-
-      setConfidence(randomScore);
-    }, 3000);
-
-    return () => clearInterval(confidenceTimer);
   }, []);
 
   // Timer
@@ -55,7 +46,7 @@ function Interview() {
     return () => clearInterval(timer);
   }, [timeLeft]);
 
-  // Start Camera
+  // Camera
   const startCamera = async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
@@ -69,66 +60,6 @@ function Interview() {
     } catch (error) {
       console.log("Camera Error:", error);
     }
-  };
-
-  // Speech to Text
-  const startListening = () => {
-    const SpeechRecognition =
-      window.SpeechRecognition || window.webkitSpeechRecognition;
-
-    if (!SpeechRecognition) {
-      alert("Speech Recognition not supported in this browser");
-      return;
-    }
-
-    // Stop previous mic
-    if (recognitionRef.current) {
-      recognitionRef.current.stop();
-    }
-
-    const recognition = new SpeechRecognition();
-
-    recognitionRef.current = recognition;
-
-    recognition.lang = "en-IN";
-    recognition.continuous = true;
-    recognition.interimResults = true;
-
-    setAnswer("");
-    setIsListening(true);
-
-    recognition.start();
-
-    recognition.onstart = () => {
-      console.log("Mic Started");
-    };
-
-    recognition.onresult = (event) => {
-      let transcript = "";
-
-      for (let i = 0; i < event.results.length; i++) {
-        transcript += event.results[i][0].transcript + " ";
-      }
-
-      setAnswer(transcript);
-    };
-
-    recognition.onerror = (event) => {
-      console.log("Mic Error:", event.error);
-
-      setIsListening(false);
-    };
-
-    recognition.onend = () => {
-      console.log("Mic Ended");
-
-      setIsListening(false);
-    };
-
-    // Auto stop after 15 sec
-    setTimeout(() => {
-      recognition.stop();
-    }, 15000);
   };
 
   // Questions
@@ -178,7 +109,7 @@ function Interview() {
 
   const lowerResume = resumeText.toLowerCase();
 
-  // Resume Questions
+  // Resume Based Questions
   if (lowerResume.includes("python")) {
     questions.push("Explain Python libraries you know");
   }
@@ -188,12 +119,108 @@ function Interview() {
   }
 
   if (lowerResume.includes("react")) {
-    questions.push("Explain React hooks");
+    questions.push("Explain React Hooks");
   }
 
   if (lowerResume.includes("cyber") || lowerResume.includes("security")) {
     questions.push("Explain cyber security threats");
   }
+
+  // Speech to Text
+  const startListening = () => {
+    const SpeechRecognition =
+      window.SpeechRecognition || window.webkitSpeechRecognition;
+
+    if (!SpeechRecognition) {
+      alert("Speech Recognition not supported");
+      return;
+    }
+
+    // Stop previous recognition
+    if (recognitionRef.current) {
+      recognitionRef.current.stop();
+    }
+
+    const recognition = new SpeechRecognition();
+
+    recognitionRef.current = recognition;
+
+    recognition.lang = "en-US";
+    recognition.continuous = true;
+    recognition.interimResults = true;
+    recognition.maxAlternatives = 1;
+
+    setIsListening(true);
+
+    recognition.start();
+
+    recognition.onstart = () => {
+      console.log("Mic Started");
+    };
+
+    recognition.onresult = (event) => {
+      let transcript = "";
+
+      for (let i = 0; i < event.results.length; i++) {
+        transcript += event.results[i][0].transcript + " ";
+      }
+
+      setAnswer(transcript);
+
+      // Better Confidence Calculation
+      const words = transcript.trim().split(/\s+/).filter(Boolean).length;
+
+      let confidenceValue = 0;
+
+      if (words >= 120) {
+        confidenceValue = 95;
+      } else if (words >= 90) {
+        confidenceValue = 85;
+      } else if (words >= 60) {
+        confidenceValue = 75;
+      } else if (words >= 40) {
+        confidenceValue = 65;
+      } else if (words >= 20) {
+        confidenceValue = 50;
+      } else if (words >= 8) {
+        confidenceValue = 30;
+      } else {
+        confidenceValue = 10;
+      }
+
+      setConfidence(confidenceValue);
+
+      // Emotion Detection
+      if (confidenceValue >= 85) {
+        setEmotion("Very Confident 😎");
+      } else if (confidenceValue >= 65) {
+        setEmotion("Confident 😊");
+      } else if (confidenceValue >= 40) {
+        setEmotion("Focused 🙂");
+      } else if (confidenceValue >= 15) {
+        setEmotion("Nervous 😐");
+      } else {
+        setEmotion("Silent 😶");
+      }
+    };
+
+    recognition.onerror = (event) => {
+      console.log("Mic Error:", event.error);
+      setIsListening(false);
+    };
+
+    recognition.onend = () => {
+      console.log("Mic Ended");
+      setIsListening(false);
+    };
+
+    // Auto stop after 45 sec
+    setTimeout(() => {
+      if (recognitionRef.current) {
+        recognitionRef.current.stop();
+      }
+    }, 300000);
+  };
 
   // Next Question
   const handleNext = () => {
@@ -203,8 +230,9 @@ function Interview() {
 
     if (questionIndex < questions.length - 1) {
       setQuestionIndex(questionIndex + 1);
-
       setAnswer("");
+      setConfidence(0);
+      setEmotion("Neutral 😐");
     } else {
       navigate("/result", {
         state: {
@@ -268,14 +296,21 @@ function Interview() {
           </p>
 
           <p>
+            🎭 Expression:
+            <strong> {emotion}</strong>
+          </p>
+
+          <p>
             Status:
             <strong>
               {" "}
               {confidence > 80
                 ? "Excellent"
-                : confidence > 70
+                : confidence > 60
                 ? "Good"
-                : "Average"}
+                : confidence > 0
+                ? "Average"
+                : "No Response"}
             </strong>
           </p>
         </div>
@@ -329,8 +364,8 @@ const styles = {
     background: "#1e293b",
     padding: "30px",
     borderRadius: "20px",
+    minHeight: "600px",
   },
-
   cameraCard: {
     width: "350px",
     background: "#1e293b",
@@ -346,13 +381,17 @@ const styles = {
 
   textarea: {
     width: "100%",
-    height: "150px",
+    height: "350px", // increased height
     borderRadius: "10px",
     padding: "15px",
     fontSize: "16px",
     marginBottom: "20px",
+    resize: "none",
+    overflowY: "auto", // scroll enable
+    lineHeight: "1.8",
+    background: "#f8fafc",
+    color: "#000",
   },
-
   micButton: {
     padding: "12px 20px",
     background: "#22c55e",

@@ -44,7 +44,7 @@ function Result() {
     "Data Analyst": ["excel", "data", "analytics", "visualization", "sql"],
   };
 
-  // Question-wise expected answers
+  // Expected answers
   const expectedAnswers = {
     "What is React?": ["javascript", "library", "ui", "component"],
 
@@ -66,17 +66,21 @@ function Result() {
 
     "What is cyber security?": ["security", "attack", "protection", "network"],
 
+    "What is phishing?": ["fraud", "email", "attack", "steal"],
+
+    "What is AWS?": ["amazon", "cloud", "services"],
+
     "What is Artificial Intelligence?": [
       "machine",
-      "human intelligence",
       "automation",
       "learning",
+      "ai",
     ],
   };
 
   const selectedKeywords = keywords[jobRole] || [];
 
-  // Keyword matching
+  // Keyword Matching
   let matchedKeywords = 0;
 
   selectedKeywords.forEach((keyword) => {
@@ -85,12 +89,12 @@ function Result() {
     }
   });
 
-  // Remove empty answers
+  // Valid Answers
   const validAnswers = answers.filter(
     (ans) => ans && ans.trim() !== "" && ans.trim().length > 10
   );
 
-  // Real Answer Validation
+  // Question-wise validation
   let validAnswerScore = 0;
 
   questions.forEach((question, index) => {
@@ -124,6 +128,8 @@ function Result() {
     }
   }
 
+  score = Math.round(score);
+
   // Communication
   const communicationScore =
     score > 80 ? 90 : score > 60 ? 75 : score > 0 ? 50 : 0;
@@ -144,6 +150,16 @@ function Result() {
       : score > 0
       ? "Needs Improvement"
       : "No Interview Response";
+
+  // AI Feedback
+  const aiFeedback =
+    score > 80
+      ? "Excellent performance. Strong technical understanding and confident communication detected."
+      : score > 60
+      ? "Good performance. Improve answer depth and technical explanation."
+      : score > 0
+      ? "Basic understanding detected. Improve technical concepts and communication skills."
+      : "No valid interview response detected.";
 
   // Strengths
   const strengths = [];
@@ -175,7 +191,7 @@ function Result() {
     weaknesses.push("Need more confidence");
   }
 
-  // PDF Download
+  // PDF
   const downloadReport = () => {
     const doc = new jsPDF();
 
@@ -183,18 +199,17 @@ function Result() {
     doc.text("AI Interview Evaluation Report", 20, 20);
 
     doc.setFontSize(12);
-
     doc.text(`Job Role: ${jobRole}`, 20, 40);
-
     doc.text(`Overall Score: ${score}%`, 20, 50);
-
     doc.text(`Communication: ${communicationScore}%`, 20, 60);
-
     doc.text(`Technical: ${technicalScore}%`, 20, 70);
-
     doc.text(`Confidence: ${confidenceScore}%`, 20, 80);
-
     doc.text(`Recommendation: ${recommendation}`, 20, 90);
+
+    doc.text("AI Feedback:", 20, 110);
+    doc.text(aiFeedback, 20, 120, {
+      maxWidth: 160,
+    });
 
     doc.save("AI_Interview_Report.pdf");
   };
@@ -208,30 +223,19 @@ function Result() {
 
         <div style={styles.scoreBox}>
           <h3>Overall Score</h3>
-
           <h1 style={styles.score}>{score}%</h1>
         </div>
 
         <div style={styles.feedback}>
-          <p>
-            🗣 Communication:
-            {communicationScore}%
-          </p>
+          <p>🗣 Communication: {communicationScore}%</p>
+          <p>💻 Technical: {technicalScore}%</p>
+          <p>🎯 Confidence: {confidenceScore}%</p>
+          <p>🚀 Recommendation: {recommendation}</p>
+        </div>
 
-          <p>
-            💻 Technical:
-            {technicalScore}%
-          </p>
-
-          <p>
-            🎯 Confidence:
-            {confidenceScore}%
-          </p>
-
-          <p>
-            🚀 Recommendation:
-            {recommendation}
-          </p>
+        <div style={styles.aiBox}>
+          <h3>AI Feedback</h3>
+          <p>{aiFeedback}</p>
         </div>
 
         <div style={styles.skillSection}>
@@ -267,22 +271,6 @@ function Result() {
                 />
               </div>
             </div>
-          ))}
-        </div>
-
-        <div style={styles.listBox}>
-          <h3>Strengths</h3>
-
-          {strengths.length > 0 ? (
-            strengths.map((s, index) => <p key={index}>✅ {s}</p>)
-          ) : (
-            <p>No strengths detected</p>
-          )}
-
-          <h3>Weaknesses</h3>
-
-          {weaknesses.map((w, index) => (
-            <p key={index}>⚠ {w}</p>
           ))}
         </div>
 
@@ -332,8 +320,15 @@ const styles = {
     marginBottom: "20px",
   },
 
+  aiBox: {
+    background: "#f1f5f9",
+    padding: "20px",
+    borderRadius: "15px",
+    marginBottom: "20px",
+  },
+
   skillSection: {
-    marginTop: "30px",
+    marginTop: "20px",
     marginBottom: "30px",
   },
 
@@ -359,13 +354,6 @@ const styles = {
   progressFill: {
     height: "100%",
     background: "#2563eb",
-    borderRadius: "20px",
-    transition: "0.5s",
-  },
-
-  listBox: {
-    marginTop: "20px",
-    marginBottom: "20px",
   },
 
   button: {
